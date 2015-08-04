@@ -1,4 +1,4 @@
-FROM centos:centos6
+FROM ubuntu:slave/tomcat
 MAINTAINER erlang tristan.t.jiang@newegg.com
 COPY ./* /project/
 EXPOSE 8080
