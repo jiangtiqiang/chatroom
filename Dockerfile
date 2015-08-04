@@ -1,5 +1,5 @@
 FROM slave/tomcat
 MAINTAINER erlang tristan.t.jiang@newegg.com
-COPY ./* /opt
+COPY ./* /opt/
 EXPOSE 8080
 
