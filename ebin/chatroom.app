@@ -1,0 +1,9 @@
+{application,chatroom,
+             [{description,"chatroom"},
+              {vsn,"0.1"},
+              {modules,[chatroom,chatroom_app,chatroom_deps,chatroom_sup,
+                        chatroom_web]},
+              {registered,[]},
+              {mod,{chatroom_app,[]}},
+              {env,[]},
+              {applications,[kernel,stdlib,crypto]}]}.

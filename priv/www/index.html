@@ -1,0 +1,159 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN"
+   "http://www.w3.org/TR/html4/strict.dtd">
+<html lang="en">
+<head>
+    <title>MochiWeb - chat</title>
+    <meta http-equiv="content-type" content="text/html;charset=utf-8">
+    <style type="text/css">
+.js .nojs{display:none;}
+
+html, body {margin:0;padding:0;}
+body {background:#EAEAEA;color:#222;font:62.5% "Helvetica Neue",Helvetica,Arial,sans-serif;text-align:center;}
+#doc {text-align:left;margin:0 auto;font-size:2em;width:40em;}
+#header {text-align:center;margin:2em 0;}
+#header * {margin:0;}
+#header p {position: relative;left: 30px;}
+#header h1 {color:yellow;}
+h1, h2, h3 {letter-spacing:-1px;}
+
+.source {font-size:.8em;color:#000;}
+pre {font-size:.9em;background-color:#ffc;overflow-x:auto;}
+pre em {color:#009;}
+pre b {color:#900;}
+pre strong {color:#099;}
+pre i,
+pre i *{color:#090;}
+
+/* Chat */
+#chat {border:2px solid orange;width:100%;height:20em;overflow:auto;}
+#chat ol {margin:0px;padding:5px;list-style:none;}
+#chat li {border-bottom:1px solid #eee;padding:5px 10px;}
+#chat .error {color:#f00;}
+
+#chatter {padding:5px;}
+#chatter label {color:#999;width:18%;text-align:right;display:block;float:left;line-height:1.5em;}
+#chatter input {width:60%;font-size:1em;margin:0 2px;}
+#chatter .submit {width:auto;width:18%;background-color: gray}
+#signName {width: 130px;}
+    </style>
+    <script type="text/javascript">
+        document.documentElement.className = "js";
+    </script>
+</head>
+<body>
+    <div id="doc">
+
+        <div id="header">
+            <h1><a href=".">ChatRoom</a></h1>
+            <p>---Author:tristan</p>
+
+            <label for="signName">your name:</label>
+            <input type="text" id="signName" value="匿名">
+      
+        </div>
+        <div id="content">
+
+            <div id="chat">
+                <ol>
+                </ol>
+            </div>
+            <div id="chatter">
+                <label for="message">Message: </label>
+                <input type="text" name="message" id="message">
+                <input type="button" class="submit" value="send">
+            </div>
+        </div>
+
+        
+    </div>
+<script type="text/javascript" src="jquery-1.2.3.min.js"></script>
+<script type="text/javascript" id="script">
+(function($) {
+    $(document).ready(function() {
+        var url = "/chat";
+
+        $("#chat").bind("message", function(event, message) {
+            $(this).triggerHandler("append", [message]);
+            $(this).triggerHandler("poll");
+
+        }).bind("error", function(event, message) {
+            $(this).triggerHandler("poll");
+            
+        }).bind("append", function(event, message) {
+            $("ol", this).append([
+                '<li style="color:green;font-size:12px;">',
+                message.substring(0,message.indexOf('|')),
+                "</li>",
+
+                 '<li style="font-famlily:STXingkai;">',
+                message.substring(message.indexOf('|')+1,message.length),
+                "</li>",
+                ].join(""));
+           // this.scrollTop = $("ol", this).get(0).offsetHeight;
+              this.scrollTop = $("#chat").find("ol")[0].offsetHeight;
+        }).bind("poll", function(event) {
+            var self = this;
+            $.ajax({
+                url: url + "?t=" + new Date().getTime().toString(),
+                dataType: "json",
+                method: "get",
+                success: function(data) {
+                    if("ok" in data) {
+                        $(self).triggerHandler("message", [data.ok]);
+                    } else if("error" in data) {
+                        $(self).triggerHandler("error", [data.error]);
+                    } 
+                    else {
+                        alert("epic fail!");
+                    }
+                }
+            });
+        }).triggerHandler("poll");
+
+          //发送消息
+            $(".submit").click(function(){
+                var dt=new Date();
+                if($("#message").val().trim()==''||$("#signName").val().trim()==null){return;}
+                var db=$("#signName").val()+'('+dt.getHours()+':'+dt.getMinutes()+':'+dt.getSeconds()+" )|"+$("#message").val();
+                 
+
+            $.ajax({
+                url: url,
+                dataType: "json",
+                type: "POST",
+                data: "message="+db,
+                timeout:10000,//默认超时
+                success: function(data) {
+                    $("#message").val("").focus();
+                    var chat = $("#chat");
+                    if("ok" in data) {
+                        chat.triggerHandler("posted", [data.ok]);
+                    } else if("error" in data) {
+                        chat.triggerHandler("error", [data.error]);
+                    } else {
+                        alert("epic fail!");
+                    }
+                }
+            });
+            return false;
+        });
+    });
+isEnterPress();//注册回车键
+})(jQuery);
+
+//监视是否是回车键
+function isEnterPress(){
+$('body').keypress(function(event){  
+    var keycode = (event.keyCode ? event.keyCode : event.which);  
+    if(keycode == '13'){  
+         $(".submit").click();
+    }  
+});  
+
+}
+
+</script>
+ 
+</body>
+</html>
+
