@@ -1,7 +1,5 @@
-FROM cent6
+FROM centerlang
 MAINTAINER erlang tristan.t.jiang@newegg.com
 COPY ./* /opt/
-RUN yum install -y java
-RUN yum remove -y erlang
 EXPOSE 8080
 
