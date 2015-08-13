@@ -4,4 +4,5 @@ exec erl \
     -boot start_sasl \
     -sname chatroom_dev \
     -s chatroom \
-    -s reloader
+    -s reloader \
+    -detached
