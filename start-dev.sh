@@ -1,6 +1,7 @@
 #!/bin/sh
 exec erl \
-    -pa ebin deps/*/ebin \
+    -noshell \
+    -pa /opt/ebin /opt/deps/*/ebin \
     -boot start_sasl \
     -sname chatroom_dev \
     -s chatroom \
