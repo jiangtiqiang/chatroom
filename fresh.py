@@ -1,7 +1,10 @@
+#!/usr/bin/env python
+
+
 import urllib2
 import json
 import os
-import Queue
+import time
 
 
 class Template():
@@ -17,8 +20,8 @@ class Fresh():
     def __init__(self):
         self.current_json = ""
         self.new_json = ""
-        self.marathon_url = "http://address/v2/tasks"
-        self.port_url = "http://address:4001/v2/keys/"
+        self.marathon_url = "http://10.16.83.52:8080/v2/tasks"
+        self.port_url = "http://10.16.83.52:4001/v2/keys/"
         self.config_file = "haproxy.cfg"
         self.history_json_url = "history.json"
         self.id_dic = {}
@@ -53,10 +56,10 @@ class Fresh():
                     int(item["value"])
                     name = item["key"][1:]
                     self.id_dic[name] = item["value"]
-                except Exception as e:
-                    print e
-        except Exception as e:
-            print e
+                except Exception:
+                    pass
+        except Exception:
+            pass
 
     def init_data(self):
         if os.path.exists(self.history_json_url):
@@ -70,33 +73,52 @@ class Fresh():
         try:
             response = urllib2.urlopen(self.marathon_url, None, 2000)
             json_str = response.read()
-            self.new_json = json_str
-        except Exception as e:
-            print e
+            self.new_json = json.loads(json_str)["tasks"]
+        except Exception:
+            pass
 
     def compare_equal(self):
-        return self.current_json != self.new_json
+        for item in self.new_json:
+            try:
+                item["healthCheckResults"] = ""
+                item["version"] = ""
+                item["startedAt"] = ""
+            except Exception:
+                pass
+        result = self.current_json == self.new_json
+        self.current_json = self.new_json
+        if not result:
+            f = open(self.history_json_url, "w")
+            try:
+                f.writelines(str(self.current_json))
+            finally:
+                f.close()
+        return result
 
     def create_config(self):
         f = open(self.config_file, "w")
         try:
             f.writelines(self.head)
-            lst = json.loads(self.new_json)["tasks"]
+            lst = self.new_json
             id_list = []
             for item in lst:
-                id_list.append(item["id"][0, 10])
-            list(set(id_list))  # unique id
+                id_list.append(item["id"][0:10])
+            id_list = list(set(id_list))  # unique id
             for app_id in id_list:
                 map_relation = "\n\nlisten  " + app_id + "\n" \
-                                                     "  bind  0.0.0.0:" + self.id_dic[app_id] + "\n" \
-                                                                                                "  mode tcp\n" \
-                                                                                                "  option tcplog\n" \
-                                                                                                "  balance leastconn\n"
+                                                         "  bind  0.0.0.0:" + self.id_dic[app_id] + "\n" \
+                                                                                                    "  mode tcp\n" \
+                                                                                                    "  option tcplog\n" \
+                                                                                                    "  balance leastconn\n"
                 i = 0
                 for task in lst:
-                    map_relation = map_relation + "  server  " + app_id + i + "  "+task["host"] + ":" + task["ports"][0]
-                    i += 1
+                    if task["id"][0:10] == app_id:
+                        map_relation += "  server  " + app_id + str(i) + "  " + task["host"] + ":" + str(
+                            task["ports"][0]) + "\n"
+                        i += 1
                 f.writelines(map_relation)
+        except Exception:
+            pass
         finally:
             f.close()
 
@@ -107,12 +129,15 @@ class Fresh():
         self.init_data()
         self.get_port()
         self.get_json()
-        self.compare_equal()
-        #self.create_config()
-        self.hot_fresh()
-        # while True:
-        # self.get_json()
-        # time.sleep(1)
+        while True:
+            if not self.compare_equal():
+                self.create_config()
+                self.hot_fresh()
+                #print "--------------------------------------------------find"
+            self.get_port()
+            self.get_json()
+            time.sleep(1)
+           # print "working"
 
 
 worker = Fresh()
